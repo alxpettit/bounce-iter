@@ -24,6 +24,9 @@ pub struct BounceIterLockedMut<T> {
     bounce_state: BounceState,
 }
 
+// TODO: builtin peekability
+// composibility on uniquely featured iterators is somewhat poor,
+// so we must implement this ourselves
 impl<T> BounceIterLockedMut<T> {
     pub fn reset(&mut self) {
         self.index = 0;
@@ -137,6 +140,27 @@ mod tests {
             dbg!(&item);
         }
         iter.reset();
+        let data = unrwlockify(iter).take(5).collect::<Vec<_>>();
+        assert_eq!(data, expected);
+    }
+    #[test]
+    fn write_multiple() {
+        let ptrs: Vec<_> = rwlockify(vec![1, 2, 3, 4, 5].into_iter()).collect();
+        // is backward because it occurs after a bounce, and enabling peeking prevents us from calling reset()
+        let expected = vec![5, 10, 10, 2, 10];
+        let mut iter = BounceIterLockedMut::new(ptrs).peekable();
+        for _ in 0..5 {
+            let Some(item) = iter.next() else {
+                break;
+            };
+            // 2 is skipped as this applies to the NEXT input
+            let peek = iter.peek_mut().unwrap();
+            *peek.write().unwrap() = 5;
+            dbg!(&item);
+            let value = *item.read().unwrap();
+            *item.write().unwrap() = value * 2;
+            dbg!(&item);
+        }
         let data = unrwlockify(iter).take(5).collect::<Vec<_>>();
         assert_eq!(data, expected);
     }

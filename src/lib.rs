@@ -19,7 +19,7 @@ pub fn unrwlockify<T: Clone>(iter: impl Iterator<Item = Rc<RwLock<T>>>) -> impl 
 }
 
 pub struct BounceIterLockedMut<T> {
-    collection: Vec<Rc<RwLock<T>>>,
+    collection: Vec<T>,
     index: usize,
     bounce_state: BounceState,
 }
@@ -27,21 +27,24 @@ pub struct BounceIterLockedMut<T> {
 // TODO: builtin peekability
 // composibility on uniquely featured iterators is somewhat poor,
 // so we must implement this ourselves
-impl<T> BounceIterLockedMut<T> {
+impl<T> BounceIterLockedMut<T>
+where
+    T: Clone,
+{
     pub fn reset(&mut self) {
         self.index = 0;
     }
     pub fn reset_rev(&mut self) {
         self.index = self.collection.len() - 1;
     }
-    pub fn new(collection: Vec<Rc<RwLock<T>>>) -> Self {
+    pub fn new(collection: Vec<T>) -> Self {
         Self {
             collection,
             index: 0,
             bounce_state: Default::default(),
         }
     }
-    pub fn new_rev(collection: Vec<Rc<RwLock<T>>>) -> Self {
+    pub fn new_rev(collection: Vec<T>) -> Self {
         let len = collection.len() - 1;
         Self {
             collection,
@@ -51,8 +54,11 @@ impl<T> BounceIterLockedMut<T> {
     }
 }
 
-impl<T> Iterator for BounceIterLockedMut<T> {
-    type Item = Rc<RwLock<T>>;
+impl<T> Iterator for BounceIterLockedMut<T>
+where
+    T: Clone,
+{
+    type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
         let len = self.collection.len();

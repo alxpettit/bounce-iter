@@ -49,7 +49,7 @@ impl<'a, T> Iterator for BounceIterMut<'a, T> {
         // SAFETY: PhantomData locks our lifetime to the lifetime of the array pointer,
         // so use-after-free is impossible
         // TODO: check if multiple mutable ref possible,
-        // may undermine safety garuntees in niche ways.
+        // may undermine safety guarantees in niche ways.
         let ret = unsafe {
             let slice = &mut *self.slice;
             Some(&mut slice[self.index as usize])

@@ -52,6 +52,13 @@ where
             bounce_state: Default::default(),
         }
     }
+
+    pub fn peek_before(&self) -> Option<T> {
+        self.collection.get(self.index - 1).cloned()
+    }
+    pub fn peek_after(&self) -> Option<T> {
+        self.collection.get(self.index + 1).cloned()
+    }
 }
 
 impl<T> Iterator for BounceIterLockedMut<T>

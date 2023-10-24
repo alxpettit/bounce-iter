@@ -9,7 +9,7 @@ pub struct BounceIterMut<'a, T> {
     slice: *mut [T],
     index: usize,
     bounce_state: BounceState,
-    lifetime: std::marker::PhantomData<&'a mut [T]>,
+    _marker: std::marker::PhantomData<&'a mut [T]>,
 }
 
 impl<'a, T> BounceIterMut<'a, T> {
@@ -18,7 +18,7 @@ impl<'a, T> BounceIterMut<'a, T> {
             slice: slice as *mut _,
             index: 0,
             bounce_state: Default::default(),
-            lifetime: std::marker::PhantomData,
+            _marker: std::marker::PhantomData,
         }
     }
     pub fn new_rev(slice: &'a mut [T]) -> Self {
@@ -27,7 +27,7 @@ impl<'a, T> BounceIterMut<'a, T> {
             slice: slice as *mut _,
             index: len,
             bounce_state: Default::default(),
-            lifetime: std::marker::PhantomData,
+            _marker: std::marker::PhantomData,
         }
     }
 }

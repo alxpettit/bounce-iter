@@ -12,17 +12,18 @@ pub fn rwlockify<T: Clone>(iter: impl Iterator<Item = T>) -> impl Iterator<Item 
     iter.map(|x| Rc::new(RwLock::new(x.to_owned())))
 }
 
+// TODO: panic is rude
 pub fn unrwlockify<T: Clone>(iter: impl Iterator<Item = Rc<RwLock<T>>>) -> impl Iterator<Item = T> {
     iter.map(|x| x.read().expect("Failed to read RWlock").to_owned())
 }
 
-pub struct BounceIterMut<T> {
+pub struct BounceIterLockedMut<T> {
     collection: Vec<Rc<RwLock<T>>>,
     index: usize,
     bounce_state: BounceState,
 }
 
-impl<T> BounceIterMut<T> {
+impl<T> BounceIterLockedMut<T> {
     pub fn reset(&mut self) {
         self.index = 0;
     }
@@ -46,7 +47,7 @@ impl<T> BounceIterMut<T> {
     }
 }
 
-impl<T> Iterator for BounceIterMut<T> {
+impl<T> Iterator for BounceIterLockedMut<T> {
     type Item = Rc<RwLock<T>>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -80,7 +81,7 @@ mod tests {
     fn basic_test() {
         let mut data = vec![1, 2, 3, 4, 5];
         let expected = vec![1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5];
-        let mut iter = BounceIterMut::new(rwlockify(data.iter()).collect());
+        let mut iter = BounceIterLockedMut::new(rwlockify(data.iter()).collect());
         assert_eq!(
             *unrwlockify(iter).take(13).map(|x| *x).collect::<Vec<_>>(),
             expected
@@ -90,7 +91,7 @@ mod tests {
     fn basic_test_rev() {
         let mut data = vec![1, 2, 3, 4, 5];
         let expected = vec![5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5];
-        let mut iter = BounceIterMut::new_rev(rwlockify(data.iter()).collect());
+        let mut iter = BounceIterLockedMut::new_rev(rwlockify(data.iter()).collect());
         assert_eq!(
             *unrwlockify(iter).take(17).map(|x| *x).collect::<Vec<_>>(),
             expected
@@ -100,7 +101,7 @@ mod tests {
     fn write() {
         let ptrs: Vec<_> = rwlockify(vec![1, 2, 3, 4, 5].into_iter()).collect();
         let expected = vec![2, 4, 6, 8, 10];
-        let mut iter = BounceIterMut::new(ptrs);
+        let mut iter = BounceIterLockedMut::new(ptrs);
         for _ in 0..5 {
             let Some(item) = iter.next() else {
                 break;

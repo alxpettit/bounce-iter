@@ -69,6 +69,8 @@ impl<'a, T> Iterator for BounceIterMut<'a, T> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, Mutex};
+
     use super::*;
     #[test]
     fn basic_test() {
@@ -88,13 +90,22 @@ mod tests {
     fn write() {
         let mut data = vec![1, 2, 3, 4, 5];
         let expected = vec![2, 4, 6, 8, 10];
-        {
-            let mut iter = BounceIterMut::new(&mut data);
-            for item in iter.take(5) {
-                let value = *item;
-                *item = value * 2;
-            }
-            assert_eq!(data, expected);
+        let mut iter = BounceIterMut::new(&mut data);
+        for item in iter.take(5) {
+            let value = *item;
+            *item = value * 2;
         }
+        assert_eq!(data, expected);
     }
+    // CORRECT: Fails due to *mut [i32] not being Send
+    // #[test]
+    // fn move_to_new_thread() {
+    //     let mut data = vec![1, 2, 3, 4, 5];
+    //     let mut iter = Arc::new(Mutex::new(BounceIterMut::new(&mut data)));
+    //     let iter_ptr = iter.clone();
+
+    //     std::thread::spawn(|| {
+    //         iter_ptr.lock().unwrap();
+    //     });
+    // }
 }

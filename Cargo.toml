@@ -1,5 +1,5 @@
 [package]
-name = "bounce-iterator"
+name = "bounce-iter"
 version = "0.1.0"
 edition = "2021"
 description = "Bouncing iterator for concisely mutably revisiting an array of pointers"

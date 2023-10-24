@@ -36,6 +36,8 @@ impl<'a, T> Iterator for BounceIterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // SAFETY: PhantomData locks our lifetime to the lifetime of the array pointer,
+        // so use-after-free is impossible
         let len = unsafe { (*self.slice).len() };
 
         if self.index >= len {
@@ -44,6 +46,10 @@ impl<'a, T> Iterator for BounceIterMut<'a, T> {
         } else if self.index == 0 {
             self.bounce_state = BounceState::Forward;
         }
+        // SAFETY: PhantomData locks our lifetime to the lifetime of the array pointer,
+        // so use-after-free is impossible
+        // TODO: check if multiple mutable ref possible,
+        // may undermine safety garuntees in niche ways.
         let ret = unsafe {
             let slice = &mut *self.slice;
             Some(&mut slice[self.index as usize])
@@ -88,7 +94,7 @@ mod tests {
                 let value = *item;
                 *item = value * 2;
             }
+            assert_eq!(data, expected);
         }
-        assert_eq!(data, expected);
     }
 }

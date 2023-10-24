@@ -5,6 +5,7 @@ pub enum BounceState {
     Reverse,
     #[default]
     Forward,
+    NoBounce,
 }
 
 // TODO: when I have some caffeine, come up with a better name
@@ -52,14 +53,17 @@ impl<T> Iterator for BounceIterLockedMut<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let len = self.collection.len();
-
-        if self.index >= len {
-            self.bounce_state = BounceState::Reverse;
-            self.index = len - 2;
-        } else if self.index == 0 {
-            self.bounce_state = BounceState::Forward;
+        if len > 1 {
+            if self.index >= len {
+                self.bounce_state = BounceState::Reverse;
+                self.index = len - 2;
+            } else if self.index == 0 {
+                self.bounce_state = BounceState::Forward;
+            }
+        } else {
+            self.bounce_state = BounceState::NoBounce;
         }
-        let ret = self.collection[self.index].clone();
+        let ret = self.collection.get(self.index).cloned();
 
         match self.bounce_state {
             BounceState::Reverse => {
@@ -68,15 +72,36 @@ impl<T> Iterator for BounceIterLockedMut<T> {
             BounceState::Forward => {
                 self.index += 1;
             }
+            BounceState::NoBounce => {}
         }
-        Some(ret)
+        ret
     }
 }
 
-// #[cfg(test)]
+#[cfg(test)]
 mod tests {
 
     use super::*;
+    #[test]
+    fn empty() {
+        let mut data: Vec<i32> = vec![];
+        let mut iter = BounceIterLockedMut::new(rwlockify(data.iter()).collect());
+        let expected: Vec<i32> = vec![];
+        assert_eq!(
+            *unrwlockify(iter).take(5).map(|x| *x).collect::<Vec<_>>(),
+            expected
+        );
+    }
+    #[test]
+    fn smol() {
+        let mut data = vec![1];
+        let mut iter = BounceIterLockedMut::new(rwlockify(data.iter()).collect());
+        let expected = vec![1, 1, 1, 1, 1];
+        assert_eq!(
+            *unrwlockify(iter).take(5).map(|x| *x).collect::<Vec<_>>(),
+            expected
+        );
+    }
     #[test]
     fn basic_test() {
         let mut data = vec![1, 2, 3, 4, 5];

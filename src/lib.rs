@@ -84,9 +84,9 @@ mod tests {
     use super::*;
     #[test]
     fn empty() {
-        let mut data: Vec<i32> = vec![];
+        let mut data: Vec<i32> = Vec::new();
         let mut iter = BounceIterLockedMut::new(rwlockify(data.iter()).collect());
-        let expected: Vec<i32> = vec![];
+        let expected: Vec<i32> = Vec::new();
         assert_eq!(
             *unrwlockify(iter).take(5).map(|x| *x).collect::<Vec<_>>(),
             expected
